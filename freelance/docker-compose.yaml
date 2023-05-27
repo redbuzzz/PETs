@@ -1,0 +1,27 @@
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: my-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+
+volumes:
+  rabbitmq_data:
+
+#  postgres:
+#    image: postgres:14-alpine
+#    ports:
+#      - 5432:5432
+#    environment:
+#      POSTGRES_DB: frl
+#      POSTGRES_USER: frl
+#      POSTGRES_PASSWORD: frl
+#    volumes:
+#      - "db:/var/lib/postgresql/data"
