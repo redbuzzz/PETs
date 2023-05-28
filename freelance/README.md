@@ -76,11 +76,7 @@ Freelance Project
 
 Модель сообщения, содержащая информацию о сообщении, такую как отправитель, получатель и текст.
 
-Using
-
-- You need install Poetry.
-Then =>
-- poetry shell
-- poetry install 
-- запуск селери =>
-- celery -A freelance worker --beat
+### Using
+- docker-compose up
+* or
+- docker-compose up -d

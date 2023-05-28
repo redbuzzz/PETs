@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
+import os
 from datetime import timedelta
 
 from pathlib import Path
@@ -80,30 +81,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'freelance.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+    "default": {
+        "ENGINE": "django.db.backends.postgresql_psycopg2",
+        "NAME": os.environ.get("DB_NAME", "frl"),
+        "USER": os.environ.get("DB_USER", "frl"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", "frl"),
+        "HOST": os.environ.get("DB_HOST", "postgres"),
+        # в прод версии ("DB_HOST", "postgres"), в дев версии ("DB_HOST", "localhost"),
+        "PORT": os.environ.get("DB_PORT", 5432),
     }
 }
-
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql_psycopg2",
-#         "NAME": os.environ.get("DB_NAME", "frl"),
-#         "USER": os.environ.get("DB_USER", "frl"),
-#         "PASSWORD": os.environ.get("DB_PASSWORD", "frl"),
-#         "HOST": os.environ.get("DB_HOST", "localhost"),
-#         "PORT": os.environ.get("DB_PORT", 5432),
-#     }
-# }
-
-
-# Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -202,7 +190,7 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'redbuzzzzzz@gmail.com'
-EMAIL_HOST_PASSWORD = 'YOUR_PASSWORD'
+EMAIL_HOST_PASSWORD = 'ilgriukzxtwtwpzq'
 
 CORS_ORIGIN_WHITELIST = [
     "http://localhost:5173",
@@ -211,6 +199,7 @@ CORS_ORIGIN_WHITELIST = [
 CELERY_IMPORTS = (
     'api.services.tasks',
 )
-CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672/'
+# в прод версии  'amqp://guest:guest@rabbitmq:5672/'
+# в дев версии 'amqp://guest:guest@localhost:5672/'
+CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq:5672/'
 CELERY_RESULT_BACKEND = 'rpc://'
-BROKER_URL = 'amqp://guest:guest@localhost:5672//'
