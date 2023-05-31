@@ -76,8 +76,9 @@ Freelance Project
 
 Модель сообщения, содержащая информацию о сообщении, такую как отправитель, получатель и текст.
 
-### Using
-- You need to chande EMAIL_HOST_PASSWORD = '###########' to your Email Password
-- docker-compose up
-* or
-- docker-compose up -d
+Using
+
+- You need install Poetry.
+Then =>
+- poetry shell
+- poetry install

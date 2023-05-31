@@ -9,11 +9,11 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-import os
 from datetime import timedelta
 
 from pathlib import Path
 from django.conf import settings
+from django.db import models
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-11yz#2dhc_psi$y!--=ah@ypv7l957w!!x(2ue@(wpr)=7fr30
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = []
 
 # Application definition
 
@@ -43,16 +43,12 @@ INSTALLED_APPS = [
     'authorization',
     'djoser',
     'rest_framework_simplejwt',
-    'corsheaders',
-    'django_filters',
-    'drf_yasg',
+    'oauth2_provider',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
-    'corsheaders.middleware.CorsPostCsrfMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -81,17 +77,18 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'freelance.wsgi.application'
 
+# Database
+# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": os.environ.get("DB_NAME", "frl"),
-        "USER": os.environ.get("DB_USER", "frl"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", "frl"),
-        "HOST": os.environ.get("DB_HOST", "postgres"),
-        # в прод версии ("DB_HOST", "postgres"), в дев версии ("DB_HOST", "localhost"),
-        "PORT": os.environ.get("DB_PORT", 5432),
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# Password validation
+# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -107,6 +104,11 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.github.GithubOAuth2',
+    'django.contrib.auth.backends.ModelBackend'
+)
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
@@ -146,7 +148,7 @@ DJOSER = {
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=2),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": False,
     "BLACKLIST_AFTER_ROTATION": False,
     "UPDATE_LAST_LOGIN": False,
@@ -190,16 +192,4 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'redbuzzzzzz@gmail.com'
-EMAIL_HOST_PASSWORD = '###########'
-
-CORS_ORIGIN_WHITELIST = [
-    "http://localhost:5173",
-]
-
-CELERY_IMPORTS = (
-    'api.services.tasks',
-)
-# в прод версии  'amqp://guest:guest@rabbitmq:5672/'
-# в дев версии 'amqp://guest:guest@localhost:5672/'
-CELERY_BROKER_URL = 'amqp://guest:guest@rabbitmq:5672/'
-CELERY_RESULT_BACKEND = 'rpc://'
+EMAIL_HOST_PASSWORD = 'ilgriukzxtwtwpzq'

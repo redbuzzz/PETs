@@ -1,6 +1,8 @@
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 import requests
 
 
@@ -8,9 +10,9 @@ import requests
 class ActivateAccountView(APIView):
     permission_classes = [AllowAny]
 
+    # TODO сделать url перменной окружения
     def get(self, request, uid, token):
-        # todo сделать перменной окружения
-        url = 'http://127.0.0.1:8002/api/auth/users/activation/'
+        url = 'http://127.0.0.1:8000/api/auth/users/activation/'
         data = {'uid': uid, 'token': token}
         response = requests.post(url, data=data)
         if response.ok:
