@@ -1,0 +1,132 @@
+<template>
+    <div class="modal-view">
+        <form @submit.prevent="submit" class="modal-view-content">
+            <div class="title">
+                Create your room
+            </div>
+            <input v-model="this.roomName" class="indent big full-width input-modal-view" required placeholder="Room name...">
+            <MultipleChoiceFilter class="indent"
+                                  :allowMany="false"
+                                  :allowNoSelection="false"
+                                  :activeOptions="privacyFilters"
+                                  :options="ROOM_PRIVACY_OPTIONS()"
+                                  @updateActiveOptions="this.updateActiveOptions"
+                                  idPrefix="creation-privacy-filter-"
+            />
+            <button class="indent big create-button" type="submit">
+                Create
+            </button>
+            <div class="modal-view__message">{{ this.errorMessage }}</div>
+        </form>
+    </div>
+</template>
+
+<script>
+import MultipleChoiceFilter from "@/components/elements/MultipleChoiceFilter.vue";
+import {API_URL, ROOM_PRIVACY_OPTIONS} from "../../services/consts";
+import router from "../../router";
+import {mapActions, mapState} from "pinia";
+import {useRoomStore} from "../../stores/RoomStore";
+
+export default {
+  data() {
+    return {
+      privacyFilters: [],
+      roomName: "",
+      formErrorMessage: ""
+    }
+  },
+  computed: {
+    ...mapState(useRoomStore, ["createRoomRequestData"]),
+    errorMessage() {
+      if (this.createRoomRequestData.error) {
+        return this.createRoomRequestData.error.message;
+      }
+      return this.formErrorMessage;
+    }
+  },
+  components: {MultipleChoiceFilter},
+  methods: {
+    ...mapActions(useRoomStore, ["createRoom"]),
+    ROOM_PRIVACY_OPTIONS() {
+      return ROOM_PRIVACY_OPTIONS;
+    },
+    updateActiveOptions(newActiveOptions) {
+      console.log(newActiveOptions)
+      this.privacyFilters = newActiveOptions;
+    },
+    async submit() {
+      if (this.privacyFilters.length !== 1) {
+        this.formErrorMessage = "Choose privacy";
+        return;
+      }
+      this.formErrorMessage = "";
+
+      const room = await this.createRoom(this.roomName, this.privacyFilters[0].value);
+
+      if (room) {
+        this.$router.push({name: "Room", params: {id: room.id}})
+      }
+    }
+  }
+}
+</script>
+
+
+<style>
+
+.modal-view{
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-view-content{
+  background: #2B2B2B;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  height: 740px;
+  width: 656px;
+  align-items: center;
+  justify-content: center;
+}
+
+.title{
+  font-size: 56px;
+  color: #FFFFFF;
+  margin-bottom: 50px;
+}
+
+.input-modal-view{
+  height: 70px;
+  width: 460px;
+}
+
+.input-modal-view::placeholder{
+  font-size: 32px;
+  color: #2B2B2B;
+}
+
+.create-button{
+  width: 284px;
+  height: 55px;
+  background: #999999;
+  font-size: 36px;
+  color: #FFFFFF;
+}
+
+.indent{
+  margin-top: 35px;
+}
+
+.modal-view__message {
+    color: red;
+}
+
+</style>
