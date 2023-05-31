@@ -1,0 +1,50 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: my-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq/mnesia
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+
+  postgres:
+    image: postgres:14-alpine
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: frl
+      POSTGRES_USER: frl
+      POSTGRES_PASSWORD: frl
+    volumes:
+      - "db:/var/lib/postgresql/data"
+  django:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8000:8000
+    depends_on:
+      - postgres
+      - rabbitmq
+    volumes:
+      - .:/app
+    command: sh -c "python manage.py migrate --noinput && python manage.py makemigrations --noinput && python manage.py runserver 0.0.0.0:8000 "
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - django
+      - rabbitmq
+    volumes:
+      - .:/app
+    command: celery -A freelance worker --beat
+
+volumes:
+  rabbitmq_data:
+  db:
+

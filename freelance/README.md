@@ -76,9 +76,10 @@ Freelance Project
 
 Модель сообщения, содержащая информацию о сообщении, такую как отправитель, получатель и текст.
 
-Using
+### Using
+- docker-compose up
+* or
+- docker-compose up -d
 
-- You need install Poetry.
-Then =>
-- poetry shell
-- poetry install
+!!!
+poetry run pre-commit run --all-files
