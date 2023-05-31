@@ -77,9 +77,20 @@ Freelance Project
 Модель сообщения, содержащая информацию о сообщении, такую как отправитель, получатель и текст.
 
 ### Using
-- docker-compose up
-* or
-- docker-compose up -d
+
+Запуск бэкенда
+-
+* docker-compose up
+
+------------------------
+
+Запуск фронтенда
+-
+* cd frontend\
+* npm install\
+* npm run dev
+
+------------------------
 
 !!!
 poetry run pre-commit run --all-files
