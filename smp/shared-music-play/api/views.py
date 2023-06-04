@@ -1,5 +1,5 @@
 from django.contrib.auth import authenticate
-from rest_framework.permissions import IsAuthenticated
+from django.db.models import Prefetch
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import mixins, status, viewsets
@@ -8,6 +8,7 @@ from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
@@ -19,28 +20,39 @@ from api.serializers import (
     BannedUserSerializer,
     TokenResponseSerializer,
     ProfileSerializer,
+    UserRoomSerializer,
+    RoomRoleUpdateSerializer,
+    RoomRoleSerializer,
+    RoomRetrieveSerializer,
 )
 from utils import get_list_track_by_search
 from web.enums import RoomRole
-from web.models import Room, UserRoom, BannedUserRoom, PlaylistTrack
+from web.models import Room, UserRoom, BannedUserRoom, User
 from .serializers import RegistrationSerializer, LoginSerializer, RoomBriefSerializer, TrackSerializer
 
 
+# /rooms
 class RoomViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.RetrieveModelMixin, GenericViewSet):
-    pagination_class = LimitOffsetPagination
-    pagination_class.default_limit = 5
-
-    serializer_class = RoomSerializer
-
     def get_queryset(self):
         return self.request.user.rooms
 
-    @action(methods=["get"], detail=False)
-    def brief(self, request):
-        queryset = self.get_queryset()
-        serializer = RoomBriefSerializer(queryset, many=True)
-        # serializer.is_valid(raise_exception=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    def get_serializer_class(self):
+        if self.action == "list":
+            return RoomBriefSerializer
+        elif self.action == "roles":
+            return RoomRoleSerializer
+        elif self.action == "create":
+            return RoomSerializer
+        elif self.action == "retrieve":
+            return RoomRetrieveSerializer
+        return RoomSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        if self.action == "retrieve":
+            room = self.get_object()
+            context.update({"room": room})
+        return context
 
     @action(methods=["POST"], detail=False)
     def join(self, request):
@@ -67,7 +79,14 @@ class RoomViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.Retriev
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    @action(methods=["GET"], detail=False)
+    def roles(self, request):
+        roles = RoomRole.choices
+        serializer = self.get_serializer(roles, many=True)
+        return Response(serializer.data)
 
+
+# /rooms/<room_id>
 class RoomNestedViewSet(GenericViewSet):
     def get_room(self):
         return get_object_or_404(Room, id=self.kwargs["rooms_pk"])
@@ -78,6 +97,7 @@ class RoomNestedViewSet(GenericViewSet):
         return context
 
 
+# /rooms/<room_id>/playlist
 class RoomPlaylistViewSet(RoomNestedViewSet, mixins.CreateModelMixin, mixins.ListModelMixin, GenericViewSet):
     serializer_class = PlaylistTrackSerializer
 
@@ -91,26 +111,7 @@ class RoomPlaylistViewSet(RoomNestedViewSet, mixins.CreateModelMixin, mixins.Lis
         context.update({"order_num": order_num})
         return context
 
-    @action(methods=["PUT"], detail=False)
-    def order(self, request, *args, **kwargs):
-
-        new_order = request.data.get("playlist")
-        playlist = self.get_queryset()
-
-        # update ordering, but first check
-        original_order = playlist.values_list("id", flat=True)
-
-        if sorted(new_order) != sorted(original_order):
-            return Response({"status": "invalid ordering"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # todo optimize (maybe use native queries)
-        order = filter(lambda x: x[0] != x[1], zip(range(len(original_order)), new_order, original_order))
-        for i in order:
-            playlist.filter(id=i[1]).update(order_num=i[0])
-
-        return Response({"status": "ok"}, status=status.HTTP_200_OK)
-
-
+# /rooms/<room_id>/messages
 class RoomMessagesViewSet(RoomNestedViewSet, mixins.CreateModelMixin, mixins.ListModelMixin, GenericViewSet):
     serializer_class = MessageSerializer
 
@@ -118,6 +119,7 @@ class RoomMessagesViewSet(RoomNestedViewSet, mixins.CreateModelMixin, mixins.Lis
         return super().get_room().messages
 
 
+# /rooms/<room_id>/banned_users
 class RoomBannedUsersViewSet(RoomNestedViewSet, mixins.ListModelMixin, GenericViewSet):
     serializer_class = BannedUserSerializer
 
@@ -175,5 +177,17 @@ def search_tracks(request):
 def update_profile(request):
     serializer = ProfileSerializer(request.user, data=request.data, partial=True)
     serializer.is_valid(raise_exception=True)
-    serializer.save()
+    if request.method == "PUT":
+        serializer.save()
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RoomUsersViewSet(RoomNestedViewSet, mixins.ListModelMixin):
+    serializer_class = UserRoomSerializer
+
+    def get_queryset(self):
+        room = self.get_room()
+        users = User.objects.filter(userroom__room=room).prefetch_related(
+            Prefetch("userroom_set", queryset=UserRoom.objects.filter(room=room))
+        )
+        return users

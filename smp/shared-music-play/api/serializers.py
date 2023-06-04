@@ -1,13 +1,14 @@
-from django.contrib.auth import authenticate
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework_nested.serializers import NestedHyperlinkedModelSerializer
 
 import utils
 from utils import get_track_data_by_url
-from web.models import Room, User, PlaylistTrack, Message, BannedUserRoom
+from web.enums import RoomRole
+from web.models import Room, User, PlaylistTrack, Message, BannedUserRoom, UserRoom
 
 
-class UserSerializer(serializers.HyperlinkedModelSerializer):
+class UserSerializer(NestedHyperlinkedModelSerializer):
     class Meta:
         model = User
         fields = (
@@ -16,6 +17,23 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
             "email",
         )
         read_only_fields = ("email",)
+
+
+class UserRoomSerializer(serializers.ModelSerializer):
+    room_role = serializers.SerializerMethodField(method_name="get_room_role")
+
+    class Meta:
+        model = User
+        fields = ["id", "email", "room_role", "name"]
+
+    def get_room_role(self, obj):
+        return obj.userroom_set.filter(room=self.context["room"]).first().room_role
+
+
+class MessageSerializer(NestedHyperlinkedModelSerializer):
+    class Meta:
+        model = Message
+        fields = ("id", "text", "created_at", "user_id")
 
 
 class PlaylistTrackSerializer(NestedHyperlinkedModelSerializer):
@@ -53,11 +71,13 @@ class PlaylistTrackSerializer(NestedHyperlinkedModelSerializer):
 class RoomSerializer(NestedHyperlinkedModelSerializer):
     users = UserSerializer(many=True, read_only=True)
     playlist = PlaylistTrackSerializer(many=True, read_only=True)
+    messages = MessageSerializer(many=True, read_only=True)
 
     def validate(self, attrs):
         if self.context["request"].method != "POST":
             attrs["users"] = Room.users
             attrs["playlist"] = Room.playlist
+            attrs["messages"] = Room.messages
         if not attrs.get("code", None):
             attrs["code"] = utils.create_room_code()
         return attrs
@@ -72,8 +92,17 @@ class RoomSerializer(NestedHyperlinkedModelSerializer):
             "playlist",
             "created_at",
             "privacy",
+            "messages",
         )
         read_only_fields = ("code",)
+
+
+class RoomRetrieveSerializer(RoomSerializer):
+    users = UserRoomSerializer(many=True, read_only=True)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["users"].context.update(self.context)
 
 
 class RoomBriefSerializer(NestedHyperlinkedModelSerializer):
@@ -83,19 +112,6 @@ class RoomBriefSerializer(NestedHyperlinkedModelSerializer):
         model = Room
         fields = ("id", "name", "privacy", "listener_amount")
         read_only_fields = fields
-
-
-class MessageSerializer(NestedHyperlinkedModelSerializer):
-    user = UserSerializer(read_only=True)
-
-    def validate(self, attrs):
-        attrs.update({"room_id": self.context["room"].id, "user_id": self.context["request"].user.id})
-        return attrs
-
-    class Meta:
-        model = Message
-        fields = ("id", "user", "text", "created_at", "updated_at")
-        read_only_fields = ("id", "created_at", "updated_at")
 
 
 class BannedUserSerializer(NestedHyperlinkedModelSerializer):
@@ -144,3 +160,20 @@ class ProfileSerializer(serializers.ModelSerializer):
             "name",
             "email",
         )
+
+
+class RoomRoleSerializer(serializers.Serializer):
+    value = serializers.SerializerMethodField()
+    label = serializers.SerializerMethodField()
+
+    def get_value(self, obj):
+        return obj[0]
+
+    def get_label(self, obj):
+        return obj[1]
+
+
+class RoomRoleUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserRoom
+        fields = ["room_role", "user"]

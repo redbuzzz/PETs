@@ -1,19 +1,22 @@
 <template>
   <div class="profile">
-    <input-block label="Your name" class="search-bar" v-model="inputName" placeholder="Enter your name"/>
-    <input-block  label="Your email" v-model="inputEmail" placeholder="Enter your email"/>
-    <button @click="updateProfile">Update Profile</button>
-      <div>
-      Your email: {{ updatedEmail || email }}
-      <br>
-      Your name: {{ updatedName || name }}
-      <p v-if="success">Successfully updated!</p>
+
+    <form class="form" @submit.prevent="updateProfile">
+      <div v-if="this.requestData.error">{{ this.requestData.error.message }}</div>
+      <input-block label="Your name" class="search-bar" v-model="form.name" placeholder="Enter your name"/>
+      <div class="success-message" v-if="successMessage!==null">{{ successMessage }}</div>
+      <div class="loading" v-if="this.requestData.loading">
+        <span class="spinner-overlay"></span>
+        <span class="spinner"></span>
       </div>
+      <input-block label="Your email" v-model="form.email" placeholder="Enter your email"/>
+      <button type="submit">Update profile information</button>
+    </form>
   </div>
 </template>
 
 <style scoped>
-.profile{
+.profile {
   display: flex;
   flex-direction: column;
   margin: auto;
@@ -23,82 +26,97 @@
 div {
   color: white;
 }
+
+.spinner {
+  position: fixed;
+  margin: 0 auto;
+  width: 50px;
+  height: 50px;
+  border: 5px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #09f;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.form {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+}
+
+.success-message {
+  background-color: #282c34;
+  color: #ffffff;
+  border: 2px solid #00ff00;
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.spinner-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  background-color: rgba(0, 0, 0, 0.5);
+}
 </style>
 
 <script>
 
 import InputBlock from "@/components/elements/auth/InputBlock.vue";
-import axios from "axios";
-import {API_URL} from "@/services/consts";
+
+import {mapActions, mapState} from "pinia";
+import {nextTick} from "vue";
+import {useUserStore} from "@/stores/UserStore";
 
 export default {
   name: "ProfileForm",
   components: {InputBlock},
   data() {
     return {
-
-      name: "",
-      email: "",
-      inputName: "",
-      inputEmail: "",
-      updatedName: "",
-      updatedEmail: "",
-      loading: false,
-      success: null,
+      form: {
+        name: '',
+        email: '',
+      },
+      isUpdated: false
     };
   },
-  created() {
-    this.fetchProfileData();
+  async created() {
+    await this.profileData();
+    this.form.name = this.profileInfo?.name;
+    this.form.email = this.profileInfo?.email;
+  },
+  computed: {
+    ...mapState(useUserStore, ['profileInfo', 'requestData']),
+    successMessage() {
+      if (this.isUpdated) {
+        return "Successfully updated!"
+      }
+      return null
+    }
   },
   methods: {
-    fetchProfileData() {
-      this.loading = true;
-      axios
-          .get(`${API_URL}/profile`, {
-            headers: {
-              Authorization: `Token ${localStorage.getItem("token")}`,
-            },
-          })
-          .then((response) => {
-            this.name = response.data.name;
-            this.email = response.data.email;
-            this.inputName = response.data.name;
-            this.inputEmail = response.data.email;
-          })
-          .catch((error) => {
-            console.error("Ошибка при отправке запроса:", error);
-          })
-          .finally(() => {
-            this.loading = false;
-          });
-    },
-    updateProfile() {
-      this.success = null
-      this.loading = true;
-      this.updatedName = this.inputName;
-      this.updatedEmail = this.inputEmail;
-      this.name = this.inputName;
-      this.email = this.inputEmail;
-      axios.put(
-          `${API_URL}/profile`,
-          {name: this.inputName, email: this.inputEmail},
-          {
-            headers: {
-              Authorization: `Token ${localStorage.getItem("token")}`,
-            },
-          }
-      )
-          .then((response) => {
-            console.log("Профиль успешно обновлен:", response.data);
-          })
-          .catch((error) => {
-            console.error("Ошибка обновления профиля:", error);
-          })
-          .finally(() => {
-            this.loading = false;
-            this.success = true
-          });
-    },
+    ...mapActions(useUserStore, ['profileData', 'updateProfileData']),
+    async updateProfile() {
+      this.isUpdated = await this.updateProfileData(this.form.email, this.form.name)
+      setTimeout(() => {this.isUpdated = false}, 2500)
+    }
   },
 };
 </script>

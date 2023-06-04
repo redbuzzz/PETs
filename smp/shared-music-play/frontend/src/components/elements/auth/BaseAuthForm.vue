@@ -26,8 +26,6 @@
 </template>
 
 <script>
-import {API_URL} from "../../../services/consts";
-import router from "@/router";
 import InputBlock from "./InputBlock.vue";
 
 export default {

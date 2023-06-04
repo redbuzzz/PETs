@@ -29,12 +29,15 @@ ALLOWED_HOSTS = ["*"]
 # Application definition
 
 INSTALLED_APPS = [
+    "daphne",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "channels",
+    "channels_postgres",
     "rest_framework",
     "rest_framework.authtoken",
     "web",
@@ -76,16 +79,22 @@ WSGI_APPLICATION = "shared_music_play.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": os.environ.get("DB_NAME", "smp"),
-        "USER": os.environ.get("DB_USER", "smp"),
-        "PASSWORD": os.environ.get("DB_PASSWORD", "smp"),
-        "HOST": os.environ.get("DB_HOST", "localhost"),
-        "PORT": os.environ.get("DB_PORT", 5432),
-    }
+default_database = {
+    "ENGINE": "django.db.backends.postgresql_psycopg2",
+    "NAME": os.environ.get("DB_NAME", "smp"),
+    "USER": os.environ.get("DB_USER", "smp"),
+    "PASSWORD": os.environ.get("DB_PASSWORD", "smp"),
+    "HOST": os.environ.get("DB_HOST", "localhost"),
+    "PORT": os.environ.get("DB_PORT", 5432),
 }
+
+DATABASES = {"default": default_database, "channels_postgres": default_database}
+
+CHANNEL_LAYERS = {
+    "default": {"BACKEND": "channels_postgres.core.PostgresChannelLayer", "CONFIG": default_database},
+}
+
+ASGI_APPLICATION = "shared_music_play.asgi.application"
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators

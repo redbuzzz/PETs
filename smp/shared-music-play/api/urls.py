@@ -12,6 +12,7 @@ from api.views import (
     LoginAPIView,
     search_tracks,
     update_profile,
+    RoomUsersViewSet,
 )
 
 room_router = SimpleRouter()
@@ -21,6 +22,7 @@ room_nested_router = routers.NestedSimpleRouter(room_router, "rooms", lookup="ro
 room_nested_router.register("playlist", RoomPlaylistViewSet, basename="playlist")
 room_nested_router.register("banned_users", RoomBannedUsersViewSet, basename="banned_users")
 room_nested_router.register("messages", RoomMessagesViewSet, basename="messages")
+room_nested_router.register("users", RoomUsersViewSet, basename="users")
 
 urlpatterns = (
     [

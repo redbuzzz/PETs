@@ -1,7 +1,8 @@
 <template>
-  <div class="track">
+  <div class="track" :class="{active: activeTrackId === track.id}">
+    <button class="close-button" @click="this.websocketDeleteTrackById(track.id)">X</button>
     <img class="track-img" :src="track.thumbnail_url" :alt="track.title">
-      <div class="track-description">
+      <div class="track-description" @click="makeTrackActive">
         <a :href="track.url" class="track-title" target="_blank">
          {{ track.title }}
         </a>
@@ -10,24 +11,48 @@
 </template>
 
 <script>
+import {mapActions, mapState, mapWritableState} from "pinia";
+import {useRoomStore} from "../../../stores/RoomStore";
+
 export default {
   props: {
     track: {
       type: Object,
       required: true
     }
+  },
+  computed: {
+    ...mapWritableState(useRoomStore, ["activeRoom"]),
+    activeTrackId() {
+      return this.activeRoom.activeTrackId;
+    }
+  },
+  methods: {
+    ...mapActions(useRoomStore, ['websocketDeleteTrackById']),
+    makeTrackActive() {
+      this.activeRoom.activeTrackId = this.track.id;
+    }
   }
 }
 </script>
 
-<style>
+<style scoped>
   .track {
+      position: relative;
       padding: 5px;
       display: flex;
       flex-direction: row;
       height: 15%;
       width: 100%;
       border: 1px solid black;
+  }
+
+  .close-button{
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    width: 30px;
+    height: 30px;
   }
 
   .track-img {
@@ -50,5 +75,9 @@ export default {
     font-weight: 400;
     font-size: 18px;
     text-align: center;
+  }
+
+  .active {
+    background-color: #aaa;
   }
 </style>

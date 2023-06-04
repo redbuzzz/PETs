@@ -1,15 +1,16 @@
 <template>
-    <BaseAuthForm
-            @submit.prevent="this.submit"
-            :title="this.title"
-            :action-name="this.actionName"
-            :links="this.links"
-            :error="this.error">
+  <Spinner :flag="loading"/>
+  <BaseAuthForm
+      @submit.prevent="this.submit"
+      :title="this.title"
+      :action-name="this.actionName"
+      :links="this.links"
+      :error="this.error">
 
-        <InputBlock name="email" required="required" v-model="this.form.email"/>
-        <InputBlock name="password" required="required" v-model="this.form.password"/>
+    <InputBlock name="email" required="required" v-model="this.form.email"/>
+    <InputBlock name="password" required="required" v-model="this.form.password"/>
 
-    </BaseAuthForm>
+  </BaseAuthForm>
 </template>
 
 <script>
@@ -18,6 +19,7 @@ import InputBlock from "./InputBlock.vue";
 import {API_URL} from "@/services/consts";
 import {useUserStore} from "@/stores/UserStore";
 import {mapActions, mapState} from "pinia";
+import Spinner from "@/components/elements/Spinner.vue";
 
 export default {
   name: "RegistrationForm",
@@ -31,7 +33,7 @@ export default {
       }
     }
   },
-  components: {InputBlock, BaseAuthForm},
+  components: {Spinner, InputBlock, BaseAuthForm},
   data() {
     return {
       title: "Register",
@@ -49,7 +51,10 @@ export default {
     }
   },
   computed: {
-    ...mapState(useUserStore, ['error'])
+    ...mapState(useUserStore, {
+      error: (state) => state.requestData.error,
+      loading: state => state.requestData.loading
+    })
   }
 }
 </script>

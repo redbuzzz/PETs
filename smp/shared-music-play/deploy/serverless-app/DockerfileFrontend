@@ -13,6 +13,7 @@ RUN npm ci
 COPY frontend/ .
 
 ARG VITE_API_URL
+ARG VITE_WEBSOCKET_URL
 
 RUN npm run build
 

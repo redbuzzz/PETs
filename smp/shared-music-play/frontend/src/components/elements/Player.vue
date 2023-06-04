@@ -1,33 +1,26 @@
 <template>
-  <div id="player">
-  </div>
+  <div ref="youtube"></div>
 </template>
 
-<script>
-import {mapState} from "pinia";
+<script setup>
 import {useRoomStore} from "@/stores/RoomStore";
+import {ref, watch} from "vue";
+import {usePlayerStore} from "@/stores/PlayerStore";
+import {useWebSocketStore} from "@/stores/WebsocketStore";
 
-export default {
-  name: "Player",
-  data(){
-    return {
-        player: null
-    }
-  },
-  mounted() {
-  },
-  methods: {
-  },
-  computed: {
-  }
-}
+const playerStore = usePlayerStore();
+const roomStore = useRoomStore();
+const webSocketStore = useWebSocketStore();
+const youtube = ref();
+
+playerStore.initPlayer(youtube);
+
+const player = playerStore.player;
+
 </script>
 
-<style scoped>
-#player {
-  height: 100%;
-  max-width: 100%;
-}
+<style>
+
 
 iframe {
   width: 100%;

@@ -12,23 +12,27 @@
 
   </div>
   <div class="playlist-buttons">
-    <button class="small white-bg full-width">Clear</button>
-    <button class="small gray-bg full-width" @click="this.$emit('save')">Save</button>
+    <button class="small white-bg full-width" @click="this.websocketClearPlaylist">Clear</button>
+    <button class="small gray-bg full-width" @click="this.saveActiveRoomPlaylistOrder">Save</button>
   </div>
 </template>
 
 <script>
 import draggable from 'vuedraggable';
 import Track from "./Track.vue";
+import {mapActions, mapState} from "pinia";
+import {useRoomStore} from "../../../stores/RoomStore";
 
 export default {
   name: "Playlist",
   components: {Track, draggable},
-  props: {
-    playlist: {
-      type: Array,
-      required: true
-    }
+  computed: {
+    ...mapState(useRoomStore, {
+      playlist: state => state.activeRoom.playlist
+    })
+  },
+  methods: {
+    ...mapActions(useRoomStore, ['saveActiveRoomPlaylistOrder', 'websocketClearPlaylist'])
   }
 }
 </script>

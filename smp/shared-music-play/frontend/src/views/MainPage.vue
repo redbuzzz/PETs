@@ -2,12 +2,12 @@
   <BaseContainer>
     <MainContainer>
       <LeftContainer>
-        <div id="left-block" >
+        <div id="left-block">
           <div class="title" style="text-align: left; margin: 20px 0;">
             Room
           </div>
           <SearchFilter v-model="rooms.searchString"
-                        style="margin: 20px 0;"/>
+          />
           <MultipleChoiceFilter :allowMany="true"
                                 :activeOptions="rooms.privacyFilters"
                                 :options="ROOM_PRIVACY_OPTIONS()"
@@ -31,11 +31,12 @@
             <div class="title">
               Join by code
             </div>
-            <input class="big full-width" v-model="roomCode" required style="margin-bottom: 20px;" placeholder="Room code...">
+            <input class="big full-width" v-model="roomCode" required style="margin-bottom: 20px;"
+                   placeholder="Room code...">
             <button class="big" id="join-button">Join</button>
             <div class="code-form__error"
-                  v-if="this.roomJoinRequestData.error">
-                {{this.roomJoinRequestData.error.message}}
+                 v-if="this.roomJoinRequestData.error">
+              {{ this.roomJoinRequestData.error.message }}
             </div>
           </form>
         </HalfHeight>
@@ -47,7 +48,7 @@
             Create your room
           </button>
           <div class="modal-overlay" v-if="showModal">
-            <ModalView></ModalView>
+            <ModalView @close="showModal = false"></ModalView>
           </div>
         </HalfHeight>
       </RightContainer>
@@ -87,7 +88,9 @@ export default {
     ModalView
   },
   mounted() {
+    this.loadingRooms = true;
     this.fetchRoomList();
+    this.loadingRooms = false;
   },
   data() {
     return {
@@ -97,6 +100,9 @@ export default {
   },
   computed: {
     ...mapWritableState(useRoomStore, ["rooms"]),
+    ...mapWritableState(useRoomStore, {
+      loadingRooms: state => state.roomsRequestData.loading
+    }),
     ...mapState(useRoomStore, ["getFilteredRoomList", "roomJoinRequestData"])
   },
   methods: {
@@ -116,7 +122,7 @@ export default {
 
 <style scoped>
 
-#scroll-fixer{
+#scroll-fixer {
   height: 100%;
   max-height: calc(100% - 160px);
 }
@@ -157,9 +163,9 @@ export default {
 }
 
 .code-form__error {
-    color: red;
-    text-align: center;
-    font-size: 20px;
+  color: red;
+  text-align: center;
+  font-size: 20px;
 }
 
 </style>

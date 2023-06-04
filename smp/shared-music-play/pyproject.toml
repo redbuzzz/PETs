@@ -2,7 +2,7 @@
 name = "shared-music-play"
 version = "0.1.0"
 description = ""
-authors = ["Razyapova Aliya <a.raziapova@mail.ru>"]
+authors = ["Nishanbaev Timur <redbuzzzzzz@gmail.com>"]
 readme = "README.md"
 packages = [{include = "shared_music_play"}]
 
@@ -26,6 +26,9 @@ django-cors-headers = "^3.14.0"
 google-api-python-client = "^2.85.0"
 uwsgi = "^2.0.21"
 awscli = "^1.27.133"
+daphne = "^4.0.0"
+channels = "^4.0.0"
+channels-postgres = "^0.0.5"
 
 
 [tool.poetry.group.dev.dependencies]

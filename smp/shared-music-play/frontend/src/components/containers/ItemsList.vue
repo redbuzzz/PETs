@@ -1,13 +1,24 @@
 <template>
   <div class="search-results scroll-block">
+    <Spinner :flag="loading"/>
     <slot/>
   </div>
 </template>
 
 <script>
 
+import Spinner from "@/components/elements/Spinner.vue";
+import {mapState, mapWritableState} from "pinia";
+import {useRoomStore} from "@/stores/RoomStore";
+
 export default {
-  name: "ItemsList"
+  name: "ItemsList",
+  components: {Spinner},
+  computed: {
+    ...mapWritableState(useRoomStore, {
+      loading: state => state.roomsRequestData.loading,
+    })
+  }
 }
 </script>
 

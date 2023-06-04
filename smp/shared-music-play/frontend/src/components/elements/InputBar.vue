@@ -1,7 +1,11 @@
 <template>
     <div class="search-bar">
-        <form @submit.prevent="submitForm">
-            <input class="full-width small" :placeholder="placeholder" v-model="searchText" />
+        <form @submit.prevent="this.$emit('search', this.modelValue)">
+            <input class="full-width small"
+                   :placeholder="placeholder"
+                   :value="modelValue"
+                   @input="$emit('update:modelValue', $event.target.value)"
+            />
             <button style="width: 140px" class="small white-bg" type="submit">{{ button_text }}</button>
         </form>
     </div>
@@ -12,25 +16,9 @@ export default {
     name: "InputBar",
     props: {
         placeholder: String,
-        button_text: String
+        button_text: String,
+        modelValue: String
     },
-    data() {
-        return {
-            searchText: ""
-        };
-    },
-    created() {
-        const query = this.$route.query.q;
-        if (query) {
-            this.searchText = query;
-            this.submitForm();
-        }
-    },
-    methods: {
-        submitForm() {
-            this.$emit("search", this.searchText);
-        }
-    }
 };
 </script>
 

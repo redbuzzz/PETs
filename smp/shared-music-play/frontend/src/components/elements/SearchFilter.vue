@@ -2,7 +2,8 @@
   <input @input="$emit('update:modelValue', $event.target.value)"
          class="search-bar full-width small"
          :value="modelValue"
-         :placeholder="placeholder">
+         :placeholder="placeholder"
+  style="width: 97%">
 </template>
 
 <script>

@@ -1,13 +1,22 @@
 import {defineStore} from "pinia";
 import _ from "lodash";
-import {apiCreateRoom, apiFetchActiveRoom, apiFetchRooms, apiJoinRoom, apiSavePlaylist} from "@/services/api";
+import {useChatStore} from "@/stores/ChatStore";
+import {useWebSocketStore} from "./WebsocketStore";
+import {apiCreateRoom, apiFetchActiveRoom, apiFetchRooms, apiJoinRoom, apiUpdateRoomRole} from "@/services/api";
+import {useUserStore} from "./UserStore";
+
 
 export const useRoomStore = defineStore({
-  'id': 'roomStore',
+  id: 'roomStore',
   state: () => ({
     activeRoom: {
-      id: undefined,
+      id: null,
+      name: null,
+      code: null,
+      privacy: null,
       playlist: [],
+      users: [],
+      activeTrackId: null
     },
     rooms: {
       list: [],
@@ -16,50 +25,76 @@ export const useRoomStore = defineStore({
     },
     activeRoomRequestData: {
       loading: false,
-      error: null
+      error: null,
+    },
+    playlistRequestData: {
+      loading: false
     },
     roomsRequestData: {
       loading: false,
-      error: null
+      error: null,
     },
     roomJoinRequestData: {
       loading: false,
-      error: null
+      error: null,
     },
     createRoomRequestData: {
       loading: false,
-      error: null
-    }
+      error: null,
+    },
   }),
   actions: {
     async fetchActiveRoomData(id) {
       this.activeRoomRequestData.loading = true;
       this.activeRoomRequestData.error = null;
       try {
-        const data = await apiFetchActiveRoom(id);
-        this.activeRoom = data;
+        const roomData = await apiFetchActiveRoom(id);
+
+        this.activeRoom.id = roomData.id;
+        this.activeRoom.playlist = roomData.playlist;
+        this.activeRoom.activeTrackId = (roomData.playlist.length === 0) ? null : roomData.playlist[0].id;
+        this.activeRoom.users = roomData.users;
+        this.activeRoom.privacy = roomData.privacy;
+        this.activeRoom.code = roomData.code;
+        this.activeRoom.name = roomData.name;
+
+        const {messages} = roomData;
+        useChatStore().cleanMessages();
+        useChatStore().fillMessages(messages);
       } catch (error) {
         this.activeRoomRequestData.error = error;
       }
       this.activeRoomRequestData.loading = false;
     },
-    async saveActiveRoomPlaylist() {
-      this.activeRoomRequestData.error = null;
-      this.activeRoomRequestData.loading = true;
+    saveActiveRoomPlaylistOrder() {
+      this.playlistRequestData.loading = true;
       const playlistIds = this.activeRoom.playlist.map(track => track.id);
 
-      try {
-        await apiSavePlaylist(this.activeRoom.id, playlistIds);
-
-        this.activeRoom.playlist.forEach((track, index) => {
-          track.order_num = index;
-        })
-      } catch (error) {
-        this.activeRoomRequestData.error = error;
-        this.activeRoom.playlist.sort((a, b) => a.order_num - b.order_num);
+      useWebSocketStore().sendMessage({
+        type: "playlist_order",
+        data: {
+          activeTrackId: this.activeRoom.activeTrackId,
+          playlist: playlistIds
+        }
+      })
+    },
+    addTrackToPlaylist(trackUrl) {
+      useWebSocketStore().sendMessage({
+        type: "add_track",
+        data: {
+          link: trackUrl
+        }
+      })
+    },
+    updateActiveRoomPlaylistOrder(data) {
+      this.activeRoom.activeTrackId = data.activeTrackId;
+      this.activeRoom.playlist.sort(function (a, b) {
+        return data.playlist.indexOf(a.id) - data.playlist.indexOf(b.id);
+      });
+      for (let i in this.activeRoom.playlist) {
+        this.activeRoom.playlist[i].order_num = i;
       }
-
-      this.activeRoomRequestData.loading = false;
+      this.playlistRequestData.loading = false;
     },
     async fetchRoomList() {
       this.roomsRequestData.loading = true;
@@ -98,6 +133,56 @@ export const useRoomStore = defineStore({
       }
 
       this.createRoomRequestData.loading = false;
+    },
+    previousTrack() {
+      let index = _.max([0, this.getActiveTrackIndex - 1]);
+      this.activeRoom.activeTrackId = this.activeRoom.playlist[index].id;
+    },
+    nextTrack() {
+      if (this.activeRoom.activeTrackId) {
+        let index = _.min([this.getActiveTrackIndex + 1, this.activeRoom.playlist.length - 1]);
+        this.activeRoom.activeTrackId = this.activeRoom.playlist[index].id;
+      }
+
+    },
+    clearActiveRoom() {
+      this.activeRoom.id = null;
+    },
+    changeUserRole(userId, room_role) {
+      _.find(this.activeRoom.users, (user) => user.id === userId).room_role = room_role;
+    },
+    websocketDeleteTrackById(id) {
+      useWebSocketStore().sendMessage({
+        type: "delete_track",
+        data: {
+          id: id
+        }
+      })
+    },
+    deleteTrackById(id) {
+      const playlist = this.activeRoom.playlist;
+      if (playlist.length === 1) {
+        this.clearPlaylist();
+        return;
+      }
+      if (id === this.activeRoom.activeTrackId) {
+        if (this.isActiveTrackLast) {
+          this.previousTrack();
+        } else {
+          this.nextTrack()
+        }
+      }
+      this.activeRoom.playlist = _.filter(playlist, (track) => track.id !== id);
+    },
+    websocketClearPlaylist() {
+      useWebSocketStore().sendMessage({
+        type: "clear_playlist",
+        data: {}
+      })
+    },
+    clearPlaylist() {
+      this.activeRoom.activeTrackId = null;
+      this.activeRoom.playlist = [];
     }
   },
   getters: {
@@ -106,6 +191,25 @@ export const useRoomStore = defineStore({
           return room.name.toLowerCase().indexOf(this.rooms.searchString.toLowerCase()) !== -1 &&
               (_.some(this.rooms.privacyFilters, {"value": room.privacy}) || this.rooms.privacyFilters.length === 0);
       });
+    },
+    getActiveTrack() {
+      if (this.getActiveTrackIndex === -1) {
+        return null;
+      }
+      return this.activeRoom.playlist[this.getActiveTrackIndex];
+    },
+    getActiveTrackIndex() {
+      return _.findIndex(this.activeRoom.playlist, (track) => track.id === this.activeRoom.activeTrackId)
+    },
+    getRole() {
+      for (const user of this.activeRoom.users) {
+        if (useUserStore().profileInfo.id === user.id) {
+          return user.room_role;
+        }
+      }
+    },
+    isActiveTrackLast() {
+      return this.getActiveTrackIndex === this.activeRoom.playlist.length - 1
     }
   }
 })

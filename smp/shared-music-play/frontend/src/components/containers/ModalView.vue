@@ -1,6 +1,8 @@
 <template>
     <div class="modal-view">
+
         <form @submit.prevent="submit" class="modal-view-content">
+            <button class="close-button" @click="this.$emit('close')">X</button>
             <div class="title">
                 Create your room
             </div>
@@ -23,10 +25,10 @@
 
 <script>
 import MultipleChoiceFilter from "@/components/elements/MultipleChoiceFilter.vue";
-import {API_URL, ROOM_PRIVACY_OPTIONS} from "../../services/consts";
+import {API_URL, ROOM_PRIVACY_OPTIONS} from "@/services/consts";
 import router from "../../router";
 import {mapActions, mapState} from "pinia";
-import {useRoomStore} from "../../stores/RoomStore";
+import {useRoomStore} from "@/stores/RoomStore";
 
 export default {
   data() {
@@ -74,6 +76,13 @@ export default {
 
 
 <style>
+.close-button{
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 30px;
+    height: 30px;
+}
 
 .modal-view{
   position: fixed;
@@ -95,6 +104,7 @@ export default {
   width: 656px;
   align-items: center;
   justify-content: center;
+    position: relative;
 }
 
 .title{

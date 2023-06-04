@@ -1,6 +1,7 @@
 import {API_URL} from "./consts";
 import axios from "axios";
 import {useUserStore} from "@/stores/UserStore";
+import {getToken} from "@/services/localData";
 
 const instance = axios.create({
     baseURL: API_URL,
@@ -12,8 +13,8 @@ const noAuthInstance = axios.create({
 
 instance.interceptors.request.use(function (config) {
     const userStore = useUserStore();
-    if (userStore.getToken()) {
-        config.headers['Authorization'] = `Token ${userStore.getToken()}`;
+    if (getToken()) {
+        config.headers['Authorization'] = `Token ${getToken()}`;
     }
     return config;
 }, function (error) {
@@ -32,6 +33,7 @@ export async function apiLogin(email, password) {
     }
   }).catch(apiErrorHandler)
 
+
   return response.data;
 }
 
@@ -47,7 +49,7 @@ export async function apiRegister(email, password) {
 }
 
 export async function apiFetchRooms() {
-  const response = await instance.get('/rooms/brief')
+  const response = await instance.get('/rooms/')
     .catch(apiErrorHandler)
 
   return response.data;
@@ -95,3 +97,40 @@ function apiErrorHandler(error) {
     throw new Error("Unknown error, please try again");
   }
 }
+
+export async function apiSearchVideo(query) {
+  const response = await instance.get(`/search?search_text=${query}`)
+    .catch(apiErrorHandler);
+
+  return response.data;
+}
+
+export async function apiFetchRoomUsers(roomId) {
+  const response = await instance.get(`/rooms/${roomId}/users/`)
+    .catch(apiErrorHandler);
+
+  return response.data;
+}
+
+export async function apiUpdateRoomRole(roomId, userId, data) {
+  const response = await instance.patch(`/rooms/${roomId}/users/${userId}/role/`, data)
+    .catch(apiErrorHandler);
+  console.log(response.data)
+
+  return response.data;
+}
+
+export async function apiProfileData() {
+  const response = await instance.get(`/profile`).
+  catch(apiErrorHandler);
+
+  return response.data;
+}
+
+export async function apiUpdateProfile(email, name) {
+  const response = await instance.put(`/profile`, {email, name}).
+  catch(apiErrorHandler);
+
+  return response.data;
+}
+
