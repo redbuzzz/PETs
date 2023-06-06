@@ -5,7 +5,6 @@
 
 - poetry shell - вход в виртуальное окружение
 - poetry install - установка 
-- pip install -r requirements.txt - установка зависимостей
 - python manage.py migrate - выполнить миграции
 - python manage.py runserver - запуск сервера на http://127.0.0.1:8000/
 - black . - ручной запуск линтера
